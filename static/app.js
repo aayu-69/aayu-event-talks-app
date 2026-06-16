@@ -13,6 +13,7 @@ const elements = {
     refreshBtn: document.getElementById('refresh-btn'),
     refreshIcon: document.getElementById('refresh-icon'),
     exportCsvBtn: document.getElementById('export-csv-btn'),
+    themeToggle: document.getElementById('checkbox'),
     cacheTime: document.getElementById('cache-time'),
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
@@ -49,6 +50,13 @@ const elements = {
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
+    // Check saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        elements.themeToggle.checked = true;
+        document.body.classList.add('light-mode');
+    }
+
     fetchReleases();
     setupEventListeners();
     initProgressRing();
@@ -64,6 +72,17 @@ function setupEventListeners() {
     // Export CSV button
     elements.exportCsvBtn.addEventListener('click', () => {
         exportToCSV();
+    });
+
+    // Theme toggle switch
+    elements.themeToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            document.body.classList.add('light-mode');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.body.classList.remove('light-mode');
+            localStorage.setItem('theme', 'dark');
+        }
     });
 
     // Retry button on error
