@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Tracker & Tweeter</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Nav Bar -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-database"></i>
+                    <i class="fa-solid fa-bolt overlay-bolt"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>BigQuery</h1>
+                    <span>Release Radar</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <span class="cache-status" id="cache-time">Loading...</span>
+                <button class="btn btn-secondary" id="refresh-btn" title="Refresh Release Notes">
+                    <i class="fa-solid fa-rotate" id="refresh-icon"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area: Split Layout -->
+        <main class="app-main">
+            <!-- Left Side: Controls & Feed -->
+            <section class="feed-section">
+                <!-- Search & Filters Container -->
+                <div class="controls-card">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Search releases by keyword (e.g. Gemini, external tables)...">
+                        <button id="clear-search-btn" class="clear-btn" style="display: none;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="filter-group-container">
+                        <span class="filter-label"><i class="fa-solid fa-filter"></i> Filter:</span>
+                        <div class="filter-pills" id="filter-pills">
+                            <button class="filter-pill active" data-filter="all">All</button>
+                            <button class="filter-pill" data-filter="Feature"><span class="dot dot-feature"></span>Features</button>
+                            <button class="filter-pill" data-filter="Change"><span class="dot dot-change"></span>Changes</button>
+                            <button class="filter-pill" data-filter="Issue"><span class="dot dot-issue"></span>Issues</button>
+                            <button class="filter-pill" data-filter="General"><span class="dot dot-general"></span>General</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed Content -->
+                <div class="releases-feed" id="releases-feed">
+                    <!-- Loading State -->
+                    <div class="feed-state-container" id="loading-state">
+                        <div class="loading-spinner-large"></div>
+                        <p>Fetching BigQuery release notes...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="feed-state-container" id="empty-state" style="display: none;">
+                        <i class="fa-solid fa-folder-open empty-icon"></i>
+                        <h3>No releases found</h3>
+                        <p>Try adjusting your search terms or filter criteria.</p>
+                    </div>
+
+                    <!-- Error State -->
+                    <div class="feed-state-container" id="error-state" style="display: none;">
+                        <i class="fa-solid fa-triangle-exclamation error-icon"></i>
+                        <h3>Failed to load release notes</h3>
+                        <p id="error-message">An error occurred while fetching the release notes feed.</p>
+                        <button class="btn btn-primary btn-sm" id="retry-btn">
+                            <i class="fa-solid fa-arrows-rotate"></i> Retry
+                        </button>
+                    </div>
+
+                    <!-- Container for release groups -->
+                    <div id="release-groups-container"></div>
+                </div>
+            </section>
+
+            <!-- Right Side: Tweet Builder & Preview -->
+            <section class="tweet-section" id="tweet-section">
+                <!-- Sticky Tweet Card -->
+                <div class="tweet-card-sticky">
+                    <!-- Placeholder State (When no update selected) -->
+                    <div class="tweet-placeholder" id="tweet-placeholder">
+                        <div class="tweet-placeholder-icon">
+                            <i class="fa-brands fa-x-twitter"></i>
+                        </div>
+                        <h3>Select an Update</h3>
+                        <p>Click any release note card on the left to customize a tweet and share it with the community.</p>
+                    </div>
+
+                    <!-- Active Builder State -->
+                    <div class="tweet-builder" id="tweet-builder" style="display: none;">
+                        <div class="builder-header">
+                            <div class="builder-title">
+                                <i class="fa-brands fa-x-twitter title-x-icon"></i>
+                                <h3>Draft Tweet</h3>
+                            </div>
+                            <button class="close-builder-btn" id="close-builder" title="Deselect update">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Card preview of selected note -->
+                        <div class="selected-note-preview">
+                            <div class="preview-meta">
+                                <span class="badge" id="preview-badge">Feature</span>
+                                <span class="preview-date" id="preview-date">June 15, 2026</span>
+                            </div>
+                            <div class="preview-text-scroll" id="preview-raw-html">
+                                <!-- Raw HTML content goes here -->
+                            </div>
+                        </div>
+
+                        <!-- Tweet Text Area -->
+                        <div class="tweet-input-container">
+                            <label for="tweet-textarea" class="input-label">Edit your tweet:</label>
+                            <textarea id="tweet-textarea" rows="6" maxlength="500" placeholder="What's happening?"></textarea>
+                            
+                            <!-- Character Counter and Progress Circle -->
+                            <div class="textarea-footer">
+                                <div class="char-count-container">
+                                    <div class="progress-ring-container">
+                                        <svg class="progress-ring" width="20" height="20">
+                                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.08)" stroke-width="2" fill="transparent" r="8" cx="10" cy="10"/>
+                                            <circle class="progress-ring__circle" id="char-progress" stroke="#3b82f6" stroke-width="2.5" fill="transparent" r="8" cx="10" cy="10"/>
+                                        </svg>
+                                    </div>
+                                    <span class="char-count" id="char-counter">0 / 280</span>
+                                </div>
+                                <span class="validation-warning" id="char-warning" style="display: none;">Exceeds X character limit (280)</span>
+                            </div>
+                        </div>
+
+                        <!-- Hashtag & Link customization -->
+                        <div class="custom-fields">
+                            <div class="field-row">
+                                <label for="tweet-hashtags"><i class="fa-solid fa-hashtag"></i> Hashtags:</label>
+                                <input type="text" id="tweet-hashtags" value="#BigQuery #GoogleCloud">
+                            </div>
+                            <div class="field-row">
+                                <label for="tweet-link"><i class="fa-solid fa-link"></i> Link:</label>
+                                <input type="text" id="tweet-link" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="builder-actions">
+                            <button class="btn btn-secondary btn-full" id="copy-tweet-btn">
+                                <i class="fa-regular fa-copy"></i> Copy Text
+                            </button>
+                            <button class="btn btn-primary btn-full" id="publish-tweet-btn">
+                                <i class="fa-brands fa-x-twitter"></i> Post to X / Twitter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast" id="toast">
+        <i class="fa-solid fa-check-circle toast-icon" id="toast-icon"></i>
+        <span id="toast-message">Copied to clipboard!</span>
+    </div>
+
+    <!-- Custom Javascript -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
