@@ -572,6 +572,13 @@ body {
     transform: translateX(3px);
 }
 
+.release-card:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+    background-color: var(--bg-card-hover);
+    transform: translateX(3px);
+}
+
 /* Card Selection Glow States */
 .release-card.selected {
     background-color: var(--bg-card-selected);
@@ -1162,5 +1169,14 @@ input:checked + .slider .icon-moon {
 
 input:checked + .slider .icon-sun {
     color: var(--accent-orange);
+}
+
+/* Search Term Highlighting */
+.search-highlight {
+    background-color: rgba(245, 158, 11, 0.25);
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 500;
 }
 

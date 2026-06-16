@@ -57,6 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('light-mode');
     }
 
+    // Check saved hashtags
+    const savedHashtags = localStorage.getItem('hashtags');
+    if (savedHashtags !== null) {
+        elements.tweetHashtags.value = savedHashtags;
+    }
+
     fetchReleases();
     setupEventListeners();
     initProgressRing();
@@ -131,6 +137,7 @@ function setupEventListeners() {
     // Hashtags change updates the textarea body (only if the body hasn't been edited, otherwise just count characters)
     // Actually, we'll keep the text area content independent, but update the character count if they edit anything.
     elements.tweetHashtags.addEventListener('input', () => {
+        localStorage.setItem('hashtags', elements.tweetHashtags.value);
         regenerateTweetFromInputs();
     });
 
@@ -291,8 +298,16 @@ function renderFeed() {
         
         group.updates.forEach(update => {
             const cardEl = document.createElement('div');
-            // Class list depends on type
             cardEl.className = `release-card ${update.type}`;
+            cardEl.setAttribute('tabindex', '0');
+            
+            // Keyboard selection listener
+            cardEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault(); // Prevent window scroll
+                    selectUpdate(group, update);
+                }
+            });
             
             // Check if this card is currently selected
             const isSelected = state.selectedUpdate && 
@@ -342,7 +357,7 @@ function renderFeed() {
             // Card Content
             const cardContent = document.createElement('div');
             cardContent.className = 'card-content';
-            cardContent.innerHTML = update.html;
+            cardContent.innerHTML = highlightSearchText(update.html, state.searchQuery);
             cardEl.appendChild(cardContent);
             
             // Selection event listener
@@ -591,4 +606,17 @@ function exportToCSV() {
         document.body.removeChild(link);
         showToast('CSV downloaded successfully!', 'success');
     }
+}
+
+// Highlight matched search text using <mark> tags (avoiding HTML tag attributes)
+function highlightSearchText(html, query) {
+    if (!query) return html;
+    const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`(<[^>]*>)|(${escapedQuery})`, 'gi');
+    return html.replace(regex, (match, p1, p2) => {
+        if (p1) {
+            return p1;
+        }
+        return `<mark class="search-highlight">${p2}</mark>`;
+    });
 }
