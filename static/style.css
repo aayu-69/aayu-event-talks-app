@@ -1180,3 +1180,86 @@ input:checked + .slider .icon-sun {
     font-weight: 500;
 }
 
+/* Skeleton Loader Shimmer Animation */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.feed-state-container-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.skeleton-card {
+    background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.1rem;
+    height: 110px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.skeleton-badge {
+    height: 16px;
+    width: 60px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+}
+
+.skeleton-line {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    width: 100%;
+}
+
+.skeleton-line.short {
+    width: 65%;
+}
+
+/* Light mode overrides for Skeleton Cards */
+body.light-mode .skeleton-card {
+    background: linear-gradient(90deg, rgba(0,0,0,0.02) 25%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.02) 75%);
+    background-size: 200% 100%;
+}
+
+body.light-mode .skeleton-badge,
+body.light-mode .skeleton-line {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+/* Read / Unread Card States */
+.release-card.read {
+    opacity: 0.55;
+}
+
+.release-card.read:hover,
+.release-card.read:focus-visible,
+.release-card.read.selected {
+    opacity: 1;
+}
+
+/* Character Breakdown */
+.char-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    margin-top: 0.25rem;
+}
+
+body.light-mode .char-breakdown {
+    background: rgba(0, 0, 0, 0.02);
+}
+

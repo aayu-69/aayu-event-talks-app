@@ -82,9 +82,22 @@
                 <!-- Feed Content -->
                 <div class="releases-feed" id="releases-feed">
                     <!-- Loading State -->
-                    <div class="feed-state-container" id="loading-state">
-                        <div class="loading-spinner-large"></div>
-                        <p>Fetching BigQuery release notes...</p>
+                    <div class="feed-state-container-skeleton" id="loading-state">
+                        <div class="skeleton-card">
+                            <div class="skeleton-badge"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-badge"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-badge"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                        </div>
                     </div>
 
                     <!-- Empty State -->
@@ -162,6 +175,14 @@
                                     <span class="char-count" id="char-counter">0 / 280</span>
                                 </div>
                                 <span class="validation-warning" id="char-warning" style="display: none;">Exceeds X character limit (280)</span>
+                            </div>
+
+                            <!-- Character Breakdown details -->
+                            <div class="char-breakdown" id="char-breakdown">
+                                <span>Prefix: 0</span>
+                                <span>Body: 0</span>
+                                <span>Tags: 0</span>
+                                <span>Link: 0</span>
                             </div>
                         </div>
 

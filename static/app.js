@@ -5,7 +5,8 @@ let state = {
     selectedUpdate: null,
     currentFilter: 'all',
     searchQuery: '',
-    isLoading: false
+    isLoading: false,
+    readUpdates: []
 };
 
 // DOM Elements
@@ -62,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedHashtags !== null) {
         elements.tweetHashtags.value = savedHashtags;
     }
+
+    // Check saved read updates
+    state.readUpdates = JSON.parse(localStorage.getItem('read_updates') || '[]');
 
     fetchReleases();
     setupEventListeners();
@@ -309,6 +313,13 @@ function renderFeed() {
                 }
             });
             
+            // Check read status
+            const uniqueId = `${group.id}_${update.text.substring(0, 30)}`;
+            const isRead = state.readUpdates && state.readUpdates.includes(uniqueId);
+            if (isRead) {
+                cardEl.classList.add('read');
+            }
+            
             // Check if this card is currently selected
             const isSelected = state.selectedUpdate && 
                 state.selectedUpdate.id === group.id && 
@@ -332,6 +343,17 @@ function renderFeed() {
             cardActions.style.gap = '0.6rem';
             cardActions.style.alignItems = 'center';
             
+            const copyLinkIcon = document.createElement('button');
+            copyLinkIcon.className = 'card-action-btn copy-link-btn';
+            copyLinkIcon.title = 'Copy direct link to documentation';
+            copyLinkIcon.innerHTML = '<i class="fa-solid fa-link"></i>';
+            copyLinkIcon.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent card selection
+                navigator.clipboard.writeText(group.link)
+                    .then(() => showToast('Copied documentation link!', 'success'))
+                    .catch(() => showToast('Failed to copy link', 'error'));
+            });
+
             const copyIcon = document.createElement('button');
             copyIcon.className = 'card-action-btn copy-card-btn';
             copyIcon.title = 'Copy release note text';
@@ -347,10 +369,27 @@ function renderFeed() {
             checkIcon.className = 'card-select-indicator';
             checkIcon.innerHTML = isSelected ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-regular fa-circle"></i>';
             
+            cardActions.appendChild(copyLinkIcon);
             cardActions.appendChild(copyIcon);
             cardActions.appendChild(checkIcon);
             
-            cardHeader.appendChild(badge);
+            if (!isRead) {
+                const unreadDot = document.createElement('span');
+                unreadDot.className = 'unread-indicator-dot';
+                unreadDot.title = 'New update';
+                unreadDot.style.width = '6px';
+                unreadDot.style.height = '6px';
+                unreadDot.style.backgroundColor = 'var(--accent-blue)';
+                unreadDot.style.borderRadius = '50%';
+                unreadDot.style.display = 'inline-block';
+                unreadDot.style.marginLeft = '0.5rem';
+                unreadDot.style.verticalAlign = 'middle';
+                cardHeader.appendChild(badge);
+                cardHeader.appendChild(unreadDot);
+            } else {
+                cardHeader.appendChild(badge);
+            }
+            
             cardHeader.appendChild(cardActions);
             cardEl.appendChild(cardHeader);
             
@@ -404,6 +443,23 @@ function selectUpdate(group, update) {
             card.querySelector('.card-select-indicator').innerHTML = '<i class="fa-solid fa-circle-check"></i>';
         }
     });
+
+    // Mark as read
+    const uniqueId = `${group.id}_${update.text.substring(0, 30)}`;
+    if (state.readUpdates && !state.readUpdates.includes(uniqueId)) {
+        state.readUpdates.push(uniqueId);
+        localStorage.setItem('read_updates', JSON.stringify(state.readUpdates));
+        
+        // Find and dim the card, remove unread dot
+        cards.forEach(card => {
+            const textContent = card.querySelector('.card-content').textContent;
+            if (textContent.includes(update.text.substring(0, 30))) {
+                card.classList.add('read');
+                const dot = card.querySelector('.unread-indicator-dot');
+                if (dot) dot.remove();
+            }
+        });
+    }
 
     // Populate Tweet Builder
     elements.previewBadge.className = `badge badge-${update.type.toLowerCase()}`;
@@ -503,6 +559,28 @@ function updateCharCount() {
     
     elements.charCounter.textContent = `${len} / 280`;
     
+    // Character breakdown calculation
+    if (state.selectedUpdate) {
+        const hashtags = elements.tweetHashtags.value.trim();
+        const prefix = `BigQuery ${state.selectedUpdate.type} (${state.selectedUpdate.date}): `;
+        const suffix = ` ${hashtags} ${state.selectedUpdate.link}`;
+        
+        const prefixLen = prefix.length;
+        const hashtagsLen = hashtags ? hashtags.length + 1 : 0; // +1 space
+        const linkLen = state.selectedUpdate.link ? state.selectedUpdate.link.length + 1 : 0; // +1 space
+        const bodyLen = Math.max(0, len - prefixLen - hashtagsLen - linkLen);
+        
+        const breakdownEl = document.getElementById('char-breakdown');
+        if (breakdownEl) {
+            breakdownEl.innerHTML = `
+                <span>Prefix: ${prefixLen}</span>
+                <span>Body: ${bodyLen}</span>
+                <span>Tags: ${hashtagsLen}</span>
+                <span>Link: ${linkLen}</span>
+            `;
+        }
+    }
+    
     // Progress Ring updates
     if (ringCircle) {
         const percent = Math.min((len / 280) * 100, 100);
@@ -548,9 +626,19 @@ function showErrorState() {
 }
 
 // Toast System
-let toastTimeout;
+let toastQueue = [];
+let isToastShowing = false;
+
 function showToast(message, type = 'success') {
-    clearTimeout(toastTimeout);
+    toastQueue.push({ message, type });
+    processToastQueue();
+}
+
+function processToastQueue() {
+    if (isToastShowing || toastQueue.length === 0) return;
+    
+    isToastShowing = true;
+    const { message, type } = toastQueue.shift();
     
     elements.toastMessage.textContent = message;
     elements.toast.className = 'toast show';
@@ -562,9 +650,13 @@ function showToast(message, type = 'success') {
         elements.toastIcon.className = 'fa-solid fa-check-circle';
     }
     
-    toastTimeout = setTimeout(() => {
+    setTimeout(() => {
         elements.toast.classList.remove('show');
-    }, 3000);
+        setTimeout(() => {
+            isToastShowing = false;
+            processToastQueue();
+        }, 300); // Wait for transition out
+    }, 2500);
 }
 
 // Export visible/filtered releases to CSV format
