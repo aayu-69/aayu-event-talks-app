@@ -12,6 +12,7 @@ let state = {
 const elements = {
     refreshBtn: document.getElementById('refresh-btn'),
     refreshIcon: document.getElementById('refresh-icon'),
+    exportCsvBtn: document.getElementById('export-csv-btn'),
     cacheTime: document.getElementById('cache-time'),
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
@@ -58,6 +59,11 @@ function setupEventListeners() {
     // Refresh button
     elements.refreshBtn.addEventListener('click', () => {
         fetchReleases(true);
+    });
+
+    // Export CSV button
+    elements.exportCsvBtn.addEventListener('click', () => {
+        exportToCSV();
     });
 
     // Retry button on error
@@ -286,12 +292,32 @@ function renderFeed() {
             badge.className = `badge badge-${update.type.toLowerCase()}`;
             badge.textContent = update.type;
             
+            const cardActions = document.createElement('div');
+            cardActions.className = 'card-header-actions';
+            cardActions.style.display = 'flex';
+            cardActions.style.gap = '0.6rem';
+            cardActions.style.alignItems = 'center';
+            
+            const copyIcon = document.createElement('button');
+            copyIcon.className = 'card-action-btn copy-card-btn';
+            copyIcon.title = 'Copy release note text';
+            copyIcon.innerHTML = '<i class="fa-regular fa-copy"></i>';
+            copyIcon.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent card selection
+                navigator.clipboard.writeText(update.text)
+                    .then(() => showToast('Copied update to clipboard!', 'success'))
+                    .catch(() => showToast('Failed to copy', 'error'));
+            });
+
             const checkIcon = document.createElement('span');
             checkIcon.className = 'card-select-indicator';
             checkIcon.innerHTML = isSelected ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-regular fa-circle"></i>';
             
+            cardActions.appendChild(copyIcon);
+            cardActions.appendChild(checkIcon);
+            
             cardHeader.appendChild(badge);
-            cardHeader.appendChild(checkIcon);
+            cardHeader.appendChild(cardActions);
             cardEl.appendChild(cardHeader);
             
             // Card Content
@@ -505,4 +531,45 @@ function showToast(message, type = 'success') {
     toastTimeout = setTimeout(() => {
         elements.toast.classList.remove('show');
     }, 3000);
+}
+
+// Export visible/filtered releases to CSV format
+function exportToCSV() {
+    if (state.filteredReleases.length === 0) {
+        showToast('No releases available to export', 'error');
+        return;
+    }
+
+    const headers = ['Date', 'Type', 'Link', 'Update Description'];
+    const rows = [headers];
+
+    state.filteredReleases.forEach(group => {
+        group.updates.forEach(update => {
+            const cleanDate = group.date.replace(/"/g, '""');
+            const cleanType = update.type.replace(/"/g, '""');
+            const cleanLink = group.link.replace(/"/g, '""');
+            const cleanText = update.text.replace(/"/g, '""');
+
+            rows.push([
+                `"${cleanDate}"`,
+                `"${cleanType}"`,
+                `"${cleanLink}"`,
+                `"${cleanText}"`
+            ]);
+        });
+    });
+
+    const csvContent = rows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `bigquery_release_notes_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('CSV downloaded successfully!', 'success');
+    }
 }

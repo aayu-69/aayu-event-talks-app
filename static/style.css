@@ -575,6 +575,25 @@ body {
     transform: scale(1.1);
 }
 
+.card-action-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-action-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
 /* Card Body Content Styling */
 .card-content h3 {
     display: none; /* Already styled by the card badge */
